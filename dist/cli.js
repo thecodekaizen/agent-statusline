@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import { getAntigravityStatus } from './adapters/antigravity.js';
 import { getCodexStatus } from './adapters/codex.js';
 import { parseClaudeStatusPayload } from './adapters/claude.js';
@@ -70,9 +71,32 @@ export async function runCli(args) {
         showMemory: flags.memory !== undefined ? flags.memory : userConfig.showMemory,
         showCost: flags.cost !== undefined ? flags.cost : userConfig.showCost
     };
-    // 1. Check if piped data exists on stdin (Claude Code mode or piped JSON)
+    // 1. Check if piped data exists on stdin (Antigravity hook or Claude Code mode)
     const pipedInput = await readStdin();
     if (pipedInput) {
+        try {
+            const parsed = JSON.parse(pipedInput);
+            // Antigravity hook contract: conversationId or transcriptPath
+            if (parsed.conversationId || parsed.transcriptPath) {
+                const agyData = getAntigravityStatus(parsed.conversationId, parsed.workspacePaths?.[0]);
+                if (agyData) {
+                    const rendered = renderStatusLine(agyData, renderOptions);
+                    // Print directly to terminal for live visual statusline
+                    try {
+                        fs.appendFileSync('/dev/tty', '\n' + rendered + '\n');
+                    }
+                    catch {
+                        console.error('\n' + rendered + '\n');
+                    }
+                    // Satisfy Antigravity hook contract: empty JSON on stdout
+                    console.log(JSON.stringify({}));
+                    return;
+                }
+            }
+        }
+        catch {
+            // Continue to Claude Code parser
+        }
         const claudeData = parseClaudeStatusPayload(pipedInput);
         if (claudeData) {
             console.log(renderStatusLine(claudeData, renderOptions));

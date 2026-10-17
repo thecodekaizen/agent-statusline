@@ -111,15 +111,7 @@ export async function runCli(args: string[]) {
       if (parsed.conversationId || parsed.transcriptPath) {
         const agyData = getAntigravityStatus(parsed.conversationId, parsed.workspacePaths?.[0]);
         if (agyData) {
-          const rendered = renderStatusLine(agyData, renderOptions);
-          // Print directly to terminal for live visual statusline
-          try {
-            fs.appendFileSync('/dev/tty', '\n' + rendered + '\n');
-          } catch {
-            console.error('\n' + rendered + '\n');
-          }
-          // Satisfy Antigravity hook contract: empty JSON on stdout
-          console.log(JSON.stringify({}));
+          console.log(renderStatusLine(agyData, renderOptions));
           return;
         }
       }

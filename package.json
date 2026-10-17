@@ -1,0 +1,35 @@
+{
+  "name": "agent-statusline",
+  "version": "0.1.0",
+  "description": "Customizable, beautiful Powerline statusline for AI coding agents (Antigravity, Codex, Claude Code) and terminal prompts",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "agent-statusline": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node ./dist/index.js",
+    "dev": "node --experimental-strip-types src/index.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "statusline",
+    "powerline",
+    "antigravity",
+    "codex",
+    "claude-code",
+    "terminal",
+    "prompt",
+    "ai-agents"
+  ],
+  "author": "thecodekaizen",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0"
+  }
+}

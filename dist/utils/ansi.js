@@ -48,8 +48,8 @@ export function getVisibleWidth(str) {
             (code >= 0xfe30 && code <= 0xfe6f) ||
             (code >= 0xff00 && code <= 0xff60) ||
             (code >= 0xffe0 && code <= 0xffe6) ||
-            (code >= 0x1f300 && code <= 0x1f64f) || // Emojis
-            (code >= 0x1f900 && code <= 0x1f9ff)) {
+            (code >= 0x1f300 && code <= 0x1faff) // Full emoji spectrum, transport, symbols
+        ) {
             width += 2;
         }
         else {

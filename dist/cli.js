@@ -4,6 +4,8 @@ import { parseClaudeStatusPayload } from './adapters/claude.js';
 import { getGitInfo } from './adapters/git.js';
 import { renderStatusLine } from './renderer.js';
 import { installForAntigravity, installForCodex, installForClaude } from './installer.js';
+import { loadUserConfig } from './config.js';
+import { runInteractiveTui } from './tui.js';
 async function readStdin() {
     if (process.stdin.isTTY) {
         return null;
@@ -30,6 +32,7 @@ async function readStdin() {
 }
 export async function runCli(args) {
     const flags = parseArgs(args);
+    const userConfig = loadUserConfig();
     if (flags.help) {
         printHelp();
         return;
@@ -42,10 +45,30 @@ export async function runCli(args) {
         handleInstall(flags.install);
         return;
     }
+    // Interactive config mode
+    if (flags.config) {
+        const sample = getAntigravityStatus() || getCodexStatus() || {
+            agent: 'antigravity',
+            agentLabel: 'Antigravity',
+            model: 'Gemini 3.8 Flash (High)',
+            stepIndex: 42,
+            toolCallCount: 18,
+            cwd: process.cwd(),
+            git: getGitInfo(process.cwd())
+        };
+        await runInteractiveTui(sample);
+        return;
+    }
     const renderOptions = {
-        theme: flags.theme || 'catppuccin',
-        style: flags.style || 'arrow',
-        nerdFonts: !flags.noNerdFonts
+        theme: flags.theme || userConfig.theme || 'catppuccin',
+        style: flags.style || userConfig.style || 'arrow',
+        nerdFonts: flags.noNerdFonts ? false : userConfig.nerdFonts,
+        showCwd: flags.noCwd ? false : userConfig.showCwd,
+        showGit: flags.noGit ? false : userConfig.showGit,
+        showTokens: flags.noTokens ? false : userConfig.showTokens,
+        showTime: flags.noTime ? false : userConfig.showTime,
+        showMemory: flags.memory !== undefined ? flags.memory : userConfig.showMemory,
+        showCost: flags.cost !== undefined ? flags.cost : userConfig.showCost
     };
     // 1. Check if piped data exists on stdin (Claude Code mode or piped JSON)
     const pipedInput = await readStdin();
@@ -71,7 +94,22 @@ export async function runCli(args) {
             return;
         }
     }
-    // 3. Auto-detection mode
+    // 3. User config defaultAgent override if not 'auto'
+    if (userConfig.defaultAgent === 'antigravity') {
+        const agyData = getAntigravityStatus(flags.conversation);
+        if (agyData) {
+            console.log(renderStatusLine(agyData, renderOptions));
+            return;
+        }
+    }
+    else if (userConfig.defaultAgent === 'codex') {
+        const codexData = getCodexStatus();
+        if (codexData) {
+            console.log(renderStatusLine(codexData, renderOptions));
+            return;
+        }
+    }
+    // 4. Auto-detection mode
     // Try Antigravity first
     const agyData = getAntigravityStatus(flags.conversation);
     if (agyData && agyData.stepIndex && agyData.stepIndex > 0) {
@@ -103,6 +141,8 @@ function parseArgs(args) {
             flags.help = true;
         else if (arg === '--version' || arg === '-v')
             flags.version = true;
+        else if (arg === '--config' || arg === 'config')
+            flags.config = true;
         else if (arg === '--agy' || arg === '--antigravity')
             flags.agy = true;
         else if (arg === '--codex')
@@ -113,6 +153,14 @@ function parseArgs(args) {
             flags.shell = true;
         else if (arg === '--no-nerd-fonts')
             flags.noNerdFonts = true;
+        else if (arg === '--memory')
+            flags.memory = true;
+        else if (arg === '--no-memory')
+            flags.memory = false;
+        else if (arg === '--cost')
+            flags.cost = true;
+        else if (arg === '--no-cost')
+            flags.cost = false;
         else if (arg === '--theme' && args[i + 1])
             flags.theme = args[++i];
         else if (arg === '--style' && args[i + 1])
@@ -148,15 +196,19 @@ function printHelp() {
 
 \x1b[1mUSAGE:\x1b[0m
   agent-statusline [OPTIONS]
-  cat payload.json | agent-statusline
+  agent-statusline config               Launch interactive TUI configurator
+  cat payload.json | agent-statusline   Render Claude Code status JSON
 
 \x1b[1mOPTIONS:\x1b[0m
+  --config                  Launch interactive TUI configurator
   --agy, --antigravity      Render Google Antigravity session status
   --codex                   Render OpenAI Codex CLI session status
   --claude                  Render Claude Code status
   --shell                   Render standalone Git / Terminal prompt
   --theme <name>            Color theme: catppuccin, tokyonight, nord, gruvbox, cyberpunk
   --style <name>            Powerline style: arrow, rounded, slanted, block, ascii
+  --memory / --no-memory    Toggle system memory usage display
+  --cost / --no-cost        Toggle session API cost display
   --no-nerd-fonts           Use standard Unicode/ASCII fallback icons
   --conversation <id>       Target specific Antigravity conversation ID
   --install [agent]         Install statusline hook (antigravity, codex, claude, or all)

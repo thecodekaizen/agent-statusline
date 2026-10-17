@@ -15,6 +15,8 @@
   - 󰚩 **OpenAI Codex CLI (`codex`)**: Discovers active threads, models (`o3`, `gpt-4o`), and sandbox permissions.
   - 󰯉 **Claude Code CLI (`claude`)**: 100% drop-in compatible with Claude Code's piped stdin `StatusJSON` format.
   - 󰞷 **Terminal / Shell Mode**: Renders a standalone prompt bar with Git branch, dirty status, ahead/behind counters, and CWD.
+- **Interactive TUI Configurator:**
+  - Run `agent-statusline config` to cycle themes, switch Powerline styles, toggle Nerd Fonts, and install hooks with a live preview.
 - **Powerline & Nerd Fonts Support:**
   - 5 Powerline styles: `arrow` (``), `rounded` (``/``), `slanted` (``), `block`, and `ascii`.
   - Full Nerd Font icons with automatic fallback for standard Unicode/ASCII terminals (`--no-nerd-fonts`).
@@ -27,6 +29,7 @@
 - **Zero Runtime Dependencies:**
   - Native Node.js ESM implementation with instantaneous cold start (~50ms).
   - Terminal width detection with dynamic priority pruning (never breaks or wraps on narrow screens).
+  - Built-in test suite running on Node.js native test runner.
 
 ---
 
@@ -45,6 +48,9 @@ npx agent-statusline --codex
 
 # Change theme & style
 npx agent-statusline --theme tokyonight --style rounded
+
+# Launch the interactive configurator
+npx agent-statusline config
 ```
 
 ### 2. Install Hooks
@@ -59,6 +65,24 @@ npx agent-statusline --install all
 npx agent-statusline --install antigravity
 npx agent-statusline --install codex
 npx agent-statusline --install claude
+```
+
+---
+
+## 🖥️ Shell & Tmux Integrations
+
+### ZSH Prompt
+Add to `~/.zshrc`:
+```zsh
+source /path/to/agent-statusline/scripts/prompt.zsh
+```
+
+### Tmux Status Bar
+Add to `~/.tmux.conf`:
+```tmux
+set -g status-interval 3
+set -g status-right-length 140
+set -g status-right "#(agent-statusline --theme catppuccin)"
 ```
 
 ---
@@ -118,14 +142,14 @@ Added to `~/.claude/settings.json`:
 
 ---
 
-## 🛠️ Development
+## 🛠️ Development & Testing
 
 ```bash
 git clone https://github.com/thecodekaizen/agent-statusline.git
 cd agent-statusline
 npm install
 npm run build
-npm start
+npm test
 ```
 
 ## 📄 License

@@ -81,4 +81,11 @@ export interface RenderOptions {
   style?: PowerlineStyle;
   nerdFonts?: boolean;
   maxWidth?: number;
+  showCwd?: boolean;
+  showGit?: boolean;
+  showTokens?: boolean;
+  showTime?: boolean;
+  showMemory?: boolean;
+  showCost?: boolean;
 }
+

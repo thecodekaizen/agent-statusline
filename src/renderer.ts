@@ -3,6 +3,7 @@ import { DEFAULT_THEME, THEMES } from './themes.js';
 import { getAgentIcon, NERD_FONT_ICONS, POWERLINE_STYLES, UNICODE_ICONS, type AgentIcons } from './glyphs.js';
 import { ANSI_BOLD, ANSI_RESET, bgColor, fgColor, getVisibleWidth } from './utils/ansi.js';
 import { contractPath, formatDuration, formatNumber, getTerminalWidth } from './utils/terminal.js';
+import { getSystemMemoryInfo, renderProgressBar } from './utils/system.js';
 
 export function renderStatusLine(data: AgentStatusData, options: RenderOptions = {}): string {
   const theme: ThemePalette = (options.theme && THEMES[options.theme.toLowerCase()]) || DEFAULT_THEME;
@@ -56,8 +57,18 @@ export function renderStatusLine(data: AgentStatusData, options: RenderOptions =
     }
   }
 
-  // 4. Git Info
-  if (data.git) {
+  // 4. Sandbox Mode
+  if (data.sandboxMode) {
+    leftSegments.push({
+      id: 'sandbox',
+      text: `${icons.sandbox} ${data.sandboxMode}`,
+      color: theme.muted,
+      priority: 5
+    });
+  }
+
+  // 5. Git Info
+  if (data.git && options.showGit !== false) {
     const git = data.git;
     const parts: string[] = [`${icons.git} ${git.branch}`];
 
@@ -90,19 +101,30 @@ export function renderStatusLine(data: AgentStatusData, options: RenderOptions =
     });
   }
 
-  // 5. CWD
-  if (data.cwd) {
+  // 6. CWD
+  if (data.cwd && options.showCwd !== false) {
     leftSegments.push({
       id: 'cwd',
       text: `${icons.folder} ${contractPath(data.cwd)}`,
       color: theme.quaternary,
-      priority: 5
+      priority: 6
     });
   }
 
   // Right segments:
-  // 6. Tokens
-  if (data.tokensIn !== undefined || data.tokensOut !== undefined) {
+  // 7. Context Progress Bar
+  if (data.contextPercent !== undefined) {
+    const bar = renderProgressBar(data.contextPercent, 6);
+    rightSegments.push({
+      id: 'context',
+      text: `${bar} ${data.contextPercent}%`,
+      color: data.contextPercent > 80 ? theme.error : data.contextPercent > 50 ? theme.warning : theme.quaternary,
+      priority: 4
+    });
+  }
+
+  // 8. Tokens
+  if ((data.tokensIn !== undefined || data.tokensOut !== undefined) && options.showTokens !== false) {
     const tokParts: string[] = [icons.token];
     if (data.tokensIn !== undefined) tokParts.push(`${formatNumber(data.tokensIn)} in`);
     if (data.tokensOut !== undefined) tokParts.push(`${formatNumber(data.tokensOut)} out`);
@@ -110,12 +132,33 @@ export function renderStatusLine(data: AgentStatusData, options: RenderOptions =
       id: 'tokens',
       text: tokParts.join(' '),
       color: theme.quaternary,
+      priority: 5
+    });
+  }
+
+  // 9. Cost
+  if (data.costUsd !== undefined && data.costUsd > 0 && options.showCost !== false) {
+    rightSegments.push({
+      id: 'cost',
+      text: `$${data.costUsd.toFixed(4)}`,
+      color: theme.stats,
+      priority: 3
+    });
+  }
+
+  // 10. System Memory
+  if (options.showMemory) {
+    const mem = getSystemMemoryInfo();
+    rightSegments.push({
+      id: 'memory',
+      text: `󰍛 ${mem.usedGb}G (${mem.percent}%)`,
+      color: mem.percent > 85 ? theme.error : theme.quaternary,
       priority: 6
     });
   }
 
-  // 7. Session Duration
-  if (data.durationMs !== undefined && data.durationMs > 0) {
+  // 11. Session Duration
+  if (data.durationMs !== undefined && data.durationMs > 0 && options.showTime !== false) {
     rightSegments.push({
       id: 'time',
       text: `${icons.clock} ${formatDuration(data.durationMs)}`,

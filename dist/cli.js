@@ -8,6 +8,7 @@ import { installForAntigravity, installForCodex, installForClaude } from './inst
 import { loadUserConfig } from './config.js';
 import { runInteractiveTui } from './tui.js';
 import { runLiveWatch } from './watch.js';
+import { runWithStatusline } from './wrapper.js';
 async function readStdin() {
     if (process.stdin.isTTY) {
         return null;
@@ -72,6 +73,15 @@ export async function runCli(args) {
         showMemory: flags.memory !== undefined ? flags.memory : userConfig.showMemory,
         showCost: flags.cost !== undefined ? flags.cost : userConfig.showCost
     };
+    // 0. Wrapper mode: launches command with pinned terminal bottom statusline
+    if (args[0] === 'wrap' && args[1]) {
+        runWithStatusline(args[1], args.slice(2), renderOptions);
+        return;
+    }
+    if (args[0] === 'agy' || args[0] === 'codex') {
+        runWithStatusline(args[0], args.slice(1), renderOptions);
+        return;
+    }
     // Watch mode for continuous live updates in terminal / split pane
     if (flags.watch) {
         runLiveWatch(renderOptions, flags.agy ? 'antigravity' : flags.codex ? 'codex' : undefined);
@@ -199,7 +209,7 @@ function parseArgs(args) {
             flags.style = args[++i];
         else if (arg === '--conversation' && args[i + 1])
             flags.conversation = args[++i];
-        else if (arg === '--install') {
+        else if (arg === '--install' || arg === 'install') {
             flags.install = args[i + 1] && !args[i + 1].startsWith('-') ? args[++i] : 'all';
         }
     }
@@ -227,12 +237,17 @@ function printHelp() {
 \x1b[1magent-statusline\x1b[0m - Beautiful Powerline statusline for AI coding agents & terminal prompts
 
 \x1b[1mUSAGE:\x1b[0m
-  agent-statusline [OPTIONS]
+  agent-statusline agy                  Launch Antigravity CLI with live pinned statusline
+  agent-statusline codex                Launch Codex CLI with live pinned statusline
+  agent-statusline wrap <command...>    Launch any command with live pinned statusline
+  agent-statusline --watch              Watch and continuously update statusline in terminal
   agent-statusline config               Launch interactive TUI configurator
+  agent-statusline [OPTIONS]            One-shot render (for prompts & hooks)
   cat payload.json | agent-statusline   Render Claude Code status JSON
 
 \x1b[1mOPTIONS:\x1b[0m
   --config                  Launch interactive TUI configurator
+  -w, --watch               Live real-time watcher
   --agy, --antigravity      Render Google Antigravity session status
   --codex                   Render OpenAI Codex CLI session status
   --claude                  Render Claude Code status

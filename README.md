@@ -35,21 +35,22 @@
 
 ## ⚡ Quick Start
 
-### 1. Run Directly
+### 1. Launch Agents with Live Statusline
 ```bash
-# Auto-detects active agent or falls back to Git prompt
-npx agent-statusline
+# Launch Antigravity CLI with live pinned statusline
+npx agent-statusline agy
 
-# Force Antigravity mode
-npx agent-statusline --agy
+# Launch Codex CLI with live pinned statusline
+npx agent-statusline codex
 
-# Force Codex mode
-npx agent-statusline --codex
+# Wrap any interactive shell or command with a pinned statusline
+npx agent-statusline wrap zsh
+npx agent-statusline wrap <command...>
 
-# Change theme & style
-npx agent-statusline --theme tokyonight --style rounded
+# Live real-time watcher (for split panes or tmux)
+npx agent-statusline --watch
 
-# Launch the interactive configurator
+# Launch the interactive theme & style configurator
 npx agent-statusline config
 ```
 

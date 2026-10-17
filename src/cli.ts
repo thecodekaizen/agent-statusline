@@ -8,6 +8,7 @@ import { renderStatusLine } from './renderer.js';
 import { installForAntigravity, installForCodex, installForClaude } from './installer.js';
 import { loadUserConfig } from './config.js';
 import { runInteractiveTui } from './tui.js';
+import { runLiveWatch } from './watch.js';
 
 async function readStdin(): Promise<string | null> {
   if (process.stdin.isTTY) {
@@ -83,6 +84,12 @@ export async function runCli(args: string[]) {
     showMemory: flags.memory !== undefined ? flags.memory : userConfig.showMemory,
     showCost: flags.cost !== undefined ? flags.cost : userConfig.showCost
   };
+
+  // Watch mode for continuous live updates in terminal / split pane
+  if (flags.watch) {
+    runLiveWatch(renderOptions, flags.agy ? 'antigravity' : flags.codex ? 'codex' : undefined);
+    return;
+  }
 
   // 1. Check if piped data exists on stdin (Antigravity hook or Claude Code mode)
   const pipedInput = await readStdin();
@@ -187,6 +194,7 @@ function parseArgs(args: string[]) {
     else if (arg === '--codex') flags.codex = true;
     else if (arg === '--claude') flags.claude = true;
     else if (arg === '--shell') flags.shell = true;
+    else if (arg === '--watch' || arg === '-w') flags.watch = true;
     else if (arg === '--no-nerd-fonts') flags.noNerdFonts = true;
     else if (arg === '--memory') flags.memory = true;
     else if (arg === '--no-memory') flags.memory = false;
